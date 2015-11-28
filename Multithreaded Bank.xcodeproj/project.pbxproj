@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		6D942CF11C08EB1200F8A36C /* Multithreaded Bank */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Multithreaded Bank"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6D942CF41C08EB1200F8A36C /* server.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = server.c; sourceTree = "<group>"; };
+		6DFBC6CA1C097130007546D6 /* server.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = server.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				6D942CF41C08EB1200F8A36C /* server.c */,
+				6DFBC6CA1C097130007546D6 /* server.h */,
 			);
 			path = "Multithreaded Bank";
 			sourceTree = "<group>";
