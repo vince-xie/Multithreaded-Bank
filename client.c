@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     int sockfd, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    int port = 6798;
+    int port = 6799;
     
     char buffer[256];
     if (argc < 2) {
@@ -48,21 +48,25 @@ int main(int argc, char *argv[])
         printf("Error connecting to server\n");
         exit(0);
     }
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0){
-        printf("Error writing to socket\n");
-        exit(0);
+    while(1){
+        printf("Please enter the message (Enter \"exit\" to close): ");
+        bzero(buffer,256);
+        fgets(buffer,255,stdin);
+        n = write(sockfd,buffer,strlen(buffer));
+        if (n < 0){
+            printf("Error writing to socket\n");
+            exit(0);
+        }
+        if(strncasecmp(buffer, "Exit", 4) == 0){
+            close(sockfd);
+            return 0;
+        }
+        bzero(buffer,256);
+        n = read(sockfd,buffer,255);
+        if (n < 0){
+            printf("Error reading from socket\n");
+            exit(0);
+        }
+        printf("%s\n",buffer);
     }
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0){
-        printf("Error reading from socket\n");
-        exit(0);
-    }
-    printf("%s\n",buffer);
-    close(sockfd);
-    return 0;
 }
