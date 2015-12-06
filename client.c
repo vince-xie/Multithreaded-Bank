@@ -2,7 +2,7 @@
 //  client.c
 //  Multithreaded Bank
 //
-//  Created by Vince Xie on 11/27/15.
+//  Created by Vince Xie/Jacob Rizer on 11/27/15.
 //  Copyright © 2015 Vince Xie. All rights reserved.
 //
 
@@ -44,12 +44,16 @@ int main(int argc, char *argv[])
           (char *)&serv_addr.sin_addr.s_addr,
           server->h_length);
     serv_addr.sin_port = htons(port);
-    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
-        printf("Error connecting to server\n");
-        exit(0);
+    while(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
+        printf("Server not found. Waiting 3 seconds...\n");
+		sleep(3);      //wait 3 seconds to connect again
+        //exit(0);
     }
+	
+	printf("Connected to server %s\n\n", argv[1]);
+
     while(1){
-        printf("Please enter the message (Enter \"exit\" to close): ");
+        printf("Enter your command. (Enter \"exit\" to close): ");
         bzero(buffer,256);
         fgets(buffer,255,stdin);
         n = write(sockfd,buffer,strlen(buffer));
