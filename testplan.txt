@@ -1,0 +1,221 @@
+Testplan:
+
+1. First we open our server:
+
+Output:
+
+Setting up server...
+Server ready for connections
+
+PRINTOUT: (printout of bank info every 20 seconds)
+
+Bank Info
+
+2. Next, we can run all different number of clients and connect to the server. Let’s connect a client to our server using the hostname “localhost” as an argument.
+
+Output:
+
+SERVER SIDE:
+
+Client 4 connected
+
+CLIENT SIDE:
+
+Connected to server localhost
+
+
+3. We can do this for multiple clients. Let’s open up another.
+
+Output:
+
+SERVER SIDE:
+
+Client 5 connected
+
+CLIENT SIDE:
+
+Connected to server localhost
+
+
+4. On our first client, let’s first try an invalid command.
+
+Output:
+
+SERVER SIDE:
+
+Invalid command
+
+CLIENT SIDE:
+
+Invalid command
+
+
+5. Now let’s try opening an account with the name “Tom” using the command “open Tom”
+
+Output:
+
+SERVER SIDE:
+
+Client 4 added account: Tom
+
+Now that we have added an account, the printouts for the bank info are not empty anymore. Thus we get,
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 0.00
+
+CLIENT SIDE:
+
+Added account
+
+
+6. Now using our first client, let’s try starting the account using the command “start Tom”
+
+Output:
+
+SERVER SIDE:
+
+Started account
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 0.00		IN SERVICE
+
+CLIENT SIDE:
+
+Started account
+
+
+7. Now using our second client, let’s try starting “Tom”
+
+Output:
+
+SERVER SIDE:
+
+Client 5 could not start account: Tom. Account is in session.
+
+CLIENT SIDE:
+
+Error: could not start account. Account is in session.
+Waiting 2 seconds...
+
+
+8. Using our first client, lets credit $100 to Tom.
+
+Output:
+
+SERVER SIDE:
+
+Client 4 deposited $100.00
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 100.00		IN SERVICE
+
+CLIENT SIDE:
+
+Credited account.
+
+
+9. Now let’s get the account’s balance.
+
+SERVER SIDE:
+
+$100
+
+CLIENT SIDE:
+
+Balance for account Tom is $100.00
+
+
+10. Now we open a second account using the second client named “John”.
+
+Output:
+
+SERVER SIDE:
+
+Client 5 added account: John
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 100.00		IN SERVICE
+Account number: 1	Name: John	Balance: 0.00	
+
+CLIENT SIDE:
+
+Added account
+
+
+11. Now let’s debit $34 from Tom using “debit 34” on our first client
+
+Output:
+
+SERVER SIDE:
+
+Client 4 withdrew $34.00
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 66.00		IN SERVICE
+Account number: 1	Name: John	Balance: 0.00	
+
+CLIENT SIDE:
+
+Debited account.
+
+
+12. Now let’s exit the first client using “exit”
+
+Output:
+
+SERVER SIDE:
+
+Client 4 exited
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 66.00	
+Account number: 1	Name: John	Balance: 0.00
+
+
+13. Let’s start John’s account using the second client now using “start John”.
+
+Output:
+
+SERVER SIDE:
+
+Client 4 exited
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 66.00		
+Account number: 1	Name: John	Balance: 0.00		IN SERVICE
+
+ClIENT SIDE:
+
+Started account
+
+14. Now let’s finish using John’s account using “finish”
+
+Output:
+
+SERVER SIDE:
+
+Client 5 finished session.
+
+PRINTOUT:
+
+Bank Info
+Account number: 0	Name: Tom	Balance: 66.00		
+Account number: 1	Name: John	Balance: 0.00	
+
+ClIENT SIDE:
+
+Finished session
+
+
