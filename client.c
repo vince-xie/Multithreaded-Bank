@@ -25,12 +25,12 @@ void *read2(void *arg){
     char buffer[256];
     while(1){
         bzero(buffer,256);
-        n = read(sockfd,buffer,255);
+        n = read(sockfd,buffer,255); //read from server using socket
         if (n < 0){
             printf("Error reading from socket\n");
             exit(0);
         }
-        printf("%s\n",buffer);
+        printf("%s\n",buffer); //print out the server message
     }
 }
 
@@ -39,13 +39,13 @@ void *write2(void *arg){
     printf("Enter your command. (Enter \"exit\" to close): ");
     while(1){
         bzero(buffer,256);
-        fgets(buffer,255,stdin);
-        n = write(sockfd,buffer,strlen(buffer));
+        fgets(buffer,255,stdin); //read from stdin
+        n = write(sockfd,buffer,strlen(buffer)); //writes to server
         if (n < 0){
             printf("Error writing to socket\n");
             exit(0);
         }
-        if(strncasecmp(buffer, "Exit", 4) == 0){
+        if(strncasecmp(buffer, "Exit", 4) == 0){ //if "exit" is inputted, closes client
             close(sockfd);
             return 0;
         }
@@ -57,17 +57,17 @@ void *write2(void *arg){
 int main(int argc, char *argv[])
 {
     int port = 6799;
-    pthread_t thr[NUMTHREADS];
+    pthread_t thr[NUMTHREADS]; //array of two threads, one for reading and one for writing
     if (argc < 2) {
         printf("Error: No hostname inputted\n");
         exit(0);
     }
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0); //opens socket
     if (sockfd < 0){
         printf("Error opening socket.\n");
         exit(0);
     }
-    server = gethostbyname(argv[1]);
+    server = gethostbyname(argv[1]); //get host name
     if (server == NULL) {
         fprintf(stderr,"Error: no such host\n");
         exit(0);
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
           (char *)&serv_addr.sin_addr.s_addr,
           server->h_length);
     serv_addr.sin_port = htons(port);
-    while(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
+    while(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){ //connect to server
         printf("Server not found. Waiting 3 seconds...\n");
         sleep(3);      //wait 3 seconds to connect again
         //exit(0);
@@ -86,8 +86,9 @@ int main(int argc, char *argv[])
     
     printf("Connected to server %s\n\n", argv[1]);
     
-    int rc2 = pthread_create(&thr[1], NULL, write2, NULL);
-    int rc = pthread_create(&thr[0], NULL, read2, NULL);
+    //creates threads for reading and writing
+    int rc = pthread_create(&thr[1], NULL, write2, NULL);
+    int rc2 = pthread_create(&thr[0], NULL, read2, NULL);
     if(rc != 0 || rc2 != 0){
         printf("Error creating threads");
         return 1;
