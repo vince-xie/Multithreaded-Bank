@@ -15,6 +15,7 @@ typedef struct
 	struct sockaddr address;
 	int addr_len;
 	int session;
+    int pid;
 } connection_t;
 
 typedef struct Account {

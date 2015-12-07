@@ -18,7 +18,7 @@
 #include "server.h"
 #include <pthread.h>
 
-#define NUMTHREADS 100
+#define NUMACCOUNTS  (20)
 
 Bank *bank;
 pthread_t acceptor;
@@ -46,13 +46,15 @@ void *new_session(void *arg) {
     int rc;
     //long addr = 0;
     
-    if (!arg) pthread_exit(0);
+    if (!arg)
+        pthread_exit(0);
     conn = (connection_t *)arg;
     
     
     while(1){
-        int x;
+        int x, index;
         double amount;
+        double balance;
         bzero(buffer,256);
         bzero(acctName,100);
         n = read(conn->sock,buffer,255);
@@ -62,6 +64,12 @@ void *new_session(void *arg) {
         }
         
         if(strncasecmp(buffer, "Exit", 4) == 0){
+            
+            if(conn->session > -1)
+                bank->accounts[conn->session].session = -1;
+            
+            conn->session = -1;
+            
             printf("Client %d exited\n", conn->sock);
             n = write(conn->sock, "Exiting...", 10);
             close(conn->sock);
@@ -94,7 +102,7 @@ void *new_session(void *arg) {
             //n = write(conn->sock,"Start",5);
             
             if(conn->session != -1){
-                printf("Client %d tried to start an account but client is already in session\n", conn->sock);
+                printf("Client %d tried to start an account but client is already in session\n", conn->pid);
                 n = write(conn->sock,"Client is already in session\n", 30);
                 if (n < 0){
                     printf("Error writing to socket\n");
@@ -110,20 +118,16 @@ void *new_session(void *arg) {
             x = startAccount(acctName);
             
             if(x >= 0){
-                printf("Client %d started account: %s\n", conn->sock, acctName);
+                printf("Client %d started account: %s\n", conn->pid, acctName);
                 n = write(conn->sock,"Started account\n", 30);
                 conn->session = x;
             }else if(x == -1){
-                printf("Client %d could not start account: %s. Account does not exist.\n", conn->sock, acctName);
+                printf("Client %d could not start account: %s. Account does not exist.\n", conn->pid, acctName);
                 n = write(conn->sock, "Error: could not start account. Account does not exist.\n", 100);
             }else{
-                printf("Client %d could not start account: %s. Account is in session.\n", conn->sock, acctName);
+                printf("Client %d could not start account: %s. Account is in session.\n", conn->pid, acctName);
+                n = write(conn->sock, "Error: could not start account. Account is in session.\n", 100);
                 
-                while(x == -2){
-                    n = write(conn->sock, "Error: could not start account. Account is in session.\nWaiting 2 seconds...", 100);
-                    sleep(2);
-                    x = startAccount(acctName);
-                }
             }
             
             
@@ -207,9 +211,18 @@ void *new_session(void *arg) {
             
             buf = buffer;
             
-            sprintf(buf, "Balance for account %s is $%.2f\n", &(bank->accounts[conn->session].name), &(bank->accounts[conn->session].balance));
+            index = conn->session;
+            
+            //printf("%d\n", index);
+            
+            balance = bank->accounts[index].balance;
             
             printf("Client %d requested balance.\n", conn->sock);
+            
+            printf("Printed balance of %.2f\n", balance);
+            
+            sprintf(buf, "Balance for account %s is $%.2f\n", &(bank->accounts[conn->session].name), &balance);
+            
             n = write(conn->sock, buf, 100);
             
             if (n < 0){
@@ -261,7 +274,7 @@ void printInfo(int signo){
     printf("\nBank Info\n");
     for(i = 0; i < 20; i++){
         if(bank->accounts[i].open == 1){
-            printf("Account number: %d\tName: %s\tBalance: %.2f\t", i, bank->accounts[i].name, bank->accounts[i].balance);
+            printf("Account number: %d\tName: %s\t\tBalance: %.2f\t", i, bank->accounts[i].name, bank->accounts[i].balance);
             if(bank->accounts[i].session == 1){
                 printf("\tIN SERVICE\n");
             }else{
@@ -277,17 +290,12 @@ void printInfo(int signo){
 void setUpBank(){
     bank = (Bank *)malloc(sizeof(struct BankInfo));
     int i;
-    for(i = 0; i < 20; i++){
+    for(i = 0; i < NUMACCOUNTS; i++){
         bank->accounts[i].open = 0;
+        bank->accounts[i].session = 0;
+        bank->accounts[i].balance = 0;
     }
 }
-
-/*void setUpThreads(){
- int i;
- for(i = 0; i < NUMTHREADS; i++){
- threads[i] = NULL;
- }
- }*/
 
 int addAccount(char *name){
     
@@ -297,7 +305,7 @@ int addAccount(char *name){
     
     index = -1;
     
-    for(i = 0; i < 20; i++){
+    for(i = 0; i < NUMACCOUNTS; i++){
         if(bank->accounts[i].open == 0){
             index = i;
             break;
@@ -332,7 +340,7 @@ int startAccount(char *name){
     
     index = -1;
     
-    for(i = 0; i < 20; i++){
+    for(i = 0; i < NUMACCOUNTS; i++){
         if(bank->accounts[i].open == 1 && strcmp(bank->accounts[i].name,name) == 0){
             index = i;
             break;
@@ -345,6 +353,7 @@ int startAccount(char *name){
     }
     
     if(bank->accounts[index].session == 1){
+        rc = pthread_mutex_unlock(&mutex);
         return -2;
     }
     
@@ -356,12 +365,12 @@ int startAccount(char *name){
 }
 
 void creditAccount(int index, double amount){
-    bank->accounts[index].balance += amount;
+    bank->accounts[index].balance = bank->accounts[index].balance + amount;
 }
 
 int debitAccount(int index, double amount){
     if(bank->accounts[index].balance - amount >= 0){
-        bank->accounts[index].balance -= amount;
+        bank->accounts[index].balance = bank->accounts[index].balance - amount;
     }else{
         return -1;
     }
@@ -370,30 +379,13 @@ int debitAccount(int index, double amount){
     
 }
 
-/*void printBalance(int index){
- printf("%.2f", bank->accounts[index].balance);
- }*/
 
-/*int new_thread(int sockfd, int newsockfd){
- int i;
- int rc;
- thread_data thr_data;
- thr_data.sockfd = sockfd;
- thr_data.newsockfd = newsockfd;
+/*void sig_handler(int signo)
+ {
+ if (signo == SIGINT){
+ exit(0);
+	}
  
- for(i = 0; i < NUMTHREADS; i++){
- if(threads[i] == NULL){
- break;
- }
- }
- 
- if((rc = pthread_create(&acceptor, NULL, new_session, &thr_data))){
- fprintf(stderr, "error: pthread_create, rc: %d\n", rc);
- return EXIT_FAILURE;
- }
- 
- pthread_join(acceptor, NULL);
- return EXIT_SUCCESS;
  }*/
 
 int main(int argc, char *argv[])
@@ -403,6 +395,7 @@ int main(int argc, char *argv[])
     //setUpThreads();
     int sockfd, newsockfd;
     int port = 6799;
+    int pid;
     socklen_t clilen;
     struct sockaddr_in serv_addr, cli_addr;
     connection_t * connection;
@@ -440,6 +433,8 @@ int main(int argc, char *argv[])
     
     listen(sockfd,5); //check backlog
     
+    //signal(SIGINT, sig_handler);
+    
     //listen for new connections
     while (1)
     {
@@ -462,4 +457,5 @@ int main(int argc, char *argv[])
     
     close(sockfd);
     return 0;
+    
 }

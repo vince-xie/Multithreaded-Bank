@@ -26,8 +26,7 @@ void *read2(void *arg){
     while(1){
         bzero(buffer,256);
         n = read(sockfd,buffer,255); //read from server using socket
-        if (n < 0){
-            printf("Error reading from socket\n");
+        if (n <= 0){
             exit(0);
         }
         printf("%s\n",buffer); //print out the server message
