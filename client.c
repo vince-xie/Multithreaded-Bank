@@ -14,16 +14,50 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <pthread.h>
 
+#define NUMTHREADS 2
+int sockfd, n;
+struct sockaddr_in serv_addr;
+struct hostent *server;
+
+void *read2(void *arg){
+    char buffer[256];
+    while(1){
+        bzero(buffer,256);
+        n = read(sockfd,buffer,255);
+        if (n < 0){
+            printf("Error reading from socket\n");
+            exit(0);
+        }
+        printf("%s\n",buffer);
+    }
+}
+
+void *write2(void *arg){
+    char buffer[256];
+    printf("Enter your command. (Enter \"exit\" to close): ");
+    while(1){
+        bzero(buffer,256);
+        fgets(buffer,255,stdin);
+        n = write(sockfd,buffer,strlen(buffer));
+        if (n < 0){
+            printf("Error writing to socket\n");
+            exit(0);
+        }
+        if(strncasecmp(buffer, "Exit", 4) == 0){
+            close(sockfd);
+            return 0;
+        }
+        sleep(2);
+        printf("Enter your command. (Enter \"exit\" to close): ");
+    }
+}
 
 int main(int argc, char *argv[])
 {
-    int sockfd, n;
-    struct sockaddr_in serv_addr;
-    struct hostent *server;
     int port = 6799;
-    
-    char buffer[256];
+    pthread_t thr[NUMTHREADS];
     if (argc < 2) {
         printf("Error: No hostname inputted\n");
         exit(0);
@@ -46,31 +80,20 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(port);
     while(connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0){
         printf("Server not found. Waiting 3 seconds...\n");
-		sleep(3);      //wait 3 seconds to connect again
+        sleep(3);      //wait 3 seconds to connect again
         //exit(0);
     }
-	
-	printf("Connected to server %s\n\n", argv[1]);
-
-    while(1){
-        printf("Enter your command. (Enter \"exit\" to close): ");
-        bzero(buffer,256);
-        fgets(buffer,255,stdin);
-        n = write(sockfd,buffer,strlen(buffer));
-        if (n < 0){
-            printf("Error writing to socket\n");
-            exit(0);
-        }
-        if(strncasecmp(buffer, "Exit", 4) == 0){
-            close(sockfd);
-            return 0;
-        }
-        bzero(buffer,256);
-        n = read(sockfd,buffer,255);
-        if (n < 0){
-            printf("Error reading from socket\n");
-            exit(0);
-        }
-        printf("%s\n",buffer);
+    
+    printf("Connected to server %s\n\n", argv[1]);
+    
+    int rc2 = pthread_create(&thr[1], NULL, write2, NULL);
+    int rc = pthread_create(&thr[0], NULL, read2, NULL);
+    if(rc != 0 || rc2 != 0){
+        printf("Error creating threads");
+        return 1;
+    }
+    int i;
+    for (i = 0; i < NUMTHREADS; i++) {
+        pthread_join(thr[i], NULL);
     }
 }
